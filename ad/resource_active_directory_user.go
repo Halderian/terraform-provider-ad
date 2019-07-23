@@ -17,7 +17,7 @@ func resourceUser() *schema.Resource {
 		Read:   resourceADUserRead,
 		Delete: resourceADUserDelete,
 		Schema: map[string]*schema.Schema{
-			"User_name": {
+			"username": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -45,7 +45,7 @@ func resourceUser() *schema.Resource {
 func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ldap.Conn)
 
-	user := d.Get("User_name").(string)
+	user := d.Get("username").(string)
 	password := d.Get("password").(string)
 	domain := d.Get("domain").(string)
 	description := d.Get("description").(string)
@@ -72,7 +72,7 @@ func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ldap.Conn)
 
-	user := d.Get("User_name").(string)
+	user := d.Get("username").(string)
 	domain := d.Get("domain").(string)
 	var dnOfUser string
 	domainArr := strings.Split(domain, ".")
@@ -118,7 +118,7 @@ func resourceADUserDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 	client := meta.(*ldap.Conn)
 
-	user := d.Get("user").(string)
+	user := d.Get("username").(string)
 	domain := d.Get("domain").(string)
 	var dnOfUser string
 	dnOfUser += "cn=" + user + ",cn=User"
