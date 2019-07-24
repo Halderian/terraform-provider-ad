@@ -2,12 +2,15 @@ package ad
 
 import ldap "gopkg.in/ldap.v2"
 
-func addUserToAD(UserName string, password string, dnName string, adConn *ldap.Conn, desc string) error {
+func addUserToAD(UserName string, password string, name string, dnName string, adConn *ldap.Conn, desc string) error {
 	addRequest := ldap.NewAddRequest(dnName)
-	addRequest.Attribute("objectClass", []string{"User"})
+	addRequest.Attribute("objectClass", []string{"user"})
 	addRequest.Attribute("sAMAccountName", []string{UserName})
-	addRequest.Attribute("password", []string{password})
-	addRequest.Attribute("userAccountControl", []string{"4096"})
+	addRequest.Attribute("displayName", []string{name})
+	addRequest.Attribute("name", []string{name})
+	addRequest.Attribute("userPassword", []string{password})
+	addRequest.Attribute("userAccountControl", []string{"512"})
+	addRequest.Attribute("primaryGroupID", []string{"513"})
 	if desc != "" {
 		addRequest.Attribute("description", []string{desc})
 	}

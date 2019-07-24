@@ -23,11 +23,17 @@ func resourceUser() *schema.Resource {
 				ForceNew: true,
 			},
 			"password": {
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
+				ForceNew:  true,
+			},
+			"domain": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"domain": {
+			"fullname": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -49,17 +55,19 @@ func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 	password := d.Get("password").(string)
 	domain := d.Get("domain").(string)
 	description := d.Get("description").(string)
+	name := d.Get("fullname").(string)
 	var dnOfUser string
-	dnOfUser += "cn=" + user + ",cn=Users"
+	dnOfUser += "CN=" + user
 	domainArr := strings.Split(domain, ".")
+	dnOfUser += ",OU=Users,OU=" + domainArr[0]
 	for _, item := range domainArr {
-		dnOfUser += ",dc=" + item
+		dnOfUser += ",DC=" + item
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfUser)
 	log.Printf("[DEBUG] Adding the User to the AD : %s ", user)
 
-	err := addUserToAD(user, password, dnOfUser, client, description)
+	err := addUserToAD(user, password, name, dnOfUser, client, description)
 	if err != nil {
 		log.Printf("[ERROR] Error while adding a User to the AD : %s ", err)
 		return fmt.Errorf("Error while adding a User to the AD %s", err)
@@ -84,7 +92,7 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 		dnOfUser += ",dc=" + item
 	}
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfUser)
-	log.Printf("[DEBUG] Deleting the User from the AD : %s ", user)
+	log.Printf("[DEBUG] Searching the User in the AD : %s ", user)
 
 	searchRequest := ldap.NewSearchRequest(
 		dnOfUser, // The base dn to search
@@ -121,7 +129,7 @@ func resourceADUserDelete(d *schema.ResourceData, meta interface{}) error {
 	user := d.Get("username").(string)
 	domain := d.Get("domain").(string)
 	var dnOfUser string
-	dnOfUser += "cn=" + user + ",cn=User"
+	dnOfUser += "cn=" + user + ",ou=User"
 	domainArr := strings.Split(domain, ".")
 	for _, item := range domainArr {
 		dnOfUser += ",dc=" + item
