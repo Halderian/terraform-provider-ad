@@ -73,10 +73,20 @@ func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfUser)
 	log.Printf("[DEBUG] Adding the User to the AD : %s ", user)
 
-	err := addUserToAD(user, password, firstname, lastname, dnOfUser, client, description)
+	err := addUserToAD(user, firstname, lastname, dnOfUser, client, description)
 	if err != nil {
 		log.Printf("[ERROR] Error while adding a User to the AD : %s ", err)
 		return fmt.Errorf("Error while adding a User to the AD %s", err)
+	}
+	err = setUserPassword(dnOfUser, password, client)
+	if err != nil {
+		log.Printf("[ERROR] Error while changing password of User : %s ", err)
+		return fmt.Errorf("Error while changing password of User %s", err)
+	}
+	err = activateUser(dnOfUser, client)
+	if err != nil {
+		log.Printf("[ERROR] Error while activating of User : %s ", err)
+		return fmt.Errorf("Error while activating of User %s", err)
 	}
 	log.Printf("[DEBUG] User Added to AD successfully: %s", user)
 	d.SetId(domain + "/" + user)

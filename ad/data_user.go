@@ -12,8 +12,11 @@ func dataActiveDirectoryUsers() *schema.Resource {
 		Read: adUserReadBySearch,
 
 		Schema: map[string]*schema.Schema{
-			"user": &schema.Schema{
-				Type:     schema.TypeMap,
+			"users": &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeMap,
+				},
 				Computed: true,
 			},
 			"base_search_dn": &schema.Schema{
@@ -61,15 +64,17 @@ func adUserReadBySearch(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	userProperties := map[string]string{}
+	users := []interface{}{}
 
-	entry := sr.Entries[0]
+	for _, entry := range sr.Entries {
+		for _, properties := range entry.Attributes {
+			userProperties[properties.Name] = properties.Values[0]
+		}
 
-	for _, properties := range entry.Attributes {
-		userProperties[properties.Name] = properties.Values[0]
+		users = append(users, userProperties)
 	}
-
 	d.SetId(baseSearchDn)
-	d.Set("user", userProperties)
+	d.Set("users", users)
 
 	return nil
 }
