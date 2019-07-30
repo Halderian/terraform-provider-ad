@@ -1,10 +1,10 @@
 package ad
 
 import (
+	"crypto/tls"
 	"fmt"
-	"log"
-
 	"gopkg.in/ldap.v2"
+	"log"
 )
 
 type Config struct {
@@ -12,13 +12,14 @@ type Config struct {
 	IP       string
 	Username string
 	Password string
+	UseSSL   bool
 }
 
 // Client() returns a connection for accessing AD services.
 func (c *Config) Client() (*ldap.Conn, error) {
 	var username string
 	username = c.Username + "@" + c.Domain
-	adConn, err := clientConnect(c.IP, username, c.Password)
+	adConn, err := clientConnect(c.IP, username, c.Password, c.UseSSL)
 
 	if err != nil {
 		return nil, fmt.Errorf("Error while trying to connect active directory server, Check server IP address, username or password: %s", err)
@@ -27,8 +28,18 @@ func (c *Config) Client() (*ldap.Conn, error) {
 	return adConn, nil
 }
 
-func clientConnect(ip, username, password string) (*ldap.Conn, error) {
-	adConn, err := ldap.Dial("tcp", fmt.Sprintf("%s:%d", ip, 389))
+func clientConnect(ip, username, password string, useSSL bool) (*ldap.Conn, error) {
+	var adConn *ldap.Conn
+	var err error
+	if useSSL {
+		adConn, err = ldap.DialTLS("tcp", fmt.Sprintf("%s:%d", ip, 636), &tls.Config{
+			InsecureSkipVerify: false,
+			ServerName:         ip,
+		})
+	} else {
+		adConn, err = ldap.Dial("tcp", fmt.Sprintf("%s:%d", ip, 389))
+	}
+
 	if err != nil {
 		return nil, err
 	}

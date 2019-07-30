@@ -39,6 +39,13 @@ func Provider() terraform.ResourceProvider {
 				Description: "The user password of the AD Server",
 				DefaultFunc: schema.EnvDefaultFunc("AD_PASSWORD", nil),
 			},
+
+			"ssl": {
+				Type:        schema.TypeBool,
+				Required:    true,
+				Description: "Use an SSL connection to the AD",
+				DefaultFunc: schema.EnvDefaultFunc("AD_SSL", true),
+			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -63,6 +70,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		IP:       d.Get("ip").(string),
 		Username: d.Get("user").(string),
 		Password: d.Get("password").(string),
+		UseSSL:   d.Get("ssl").(bool),
 	}
 	log.Printf("[DEBUG] Connecting to AD")
 	return config.Client()
