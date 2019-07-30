@@ -33,7 +33,12 @@ func resourceUser() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"fullname": {
+			"firstname": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"lastname": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -55,9 +60,10 @@ func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 	password := d.Get("password").(string)
 	domain := d.Get("domain").(string)
 	description := d.Get("description").(string)
-	name := d.Get("fullname").(string)
+	firstname := d.Get("firstname").(string)
+	lastname := d.Get("lastname").(string)
 	var dnOfUser string
-	dnOfUser += "CN=" + user
+	dnOfUser += "CN=" + firstname + " " + lastname
 	domainArr := strings.Split(domain, ".")
 	dnOfUser += ",OU=Users,OU=" + domainArr[0]
 	for _, item := range domainArr {
@@ -67,7 +73,7 @@ func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfUser)
 	log.Printf("[DEBUG] Adding the User to the AD : %s ", user)
 
-	err := addUserToAD(user, password, name, dnOfUser, client, description)
+	err := addUserToAD(user, password, firstname, lastname, dnOfUser, client, description)
 	if err != nil {
 		log.Printf("[ERROR] Error while adding a User to the AD : %s ", err)
 		return fmt.Errorf("Error while adding a User to the AD %s", err)
