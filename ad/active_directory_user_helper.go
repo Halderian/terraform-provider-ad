@@ -2,13 +2,14 @@ package ad
 
 import (
 	"fmt"
+
 	"golang.org/x/text/encoding/unicode"
-	ldap "gopkg.in/ldap.v2"
+	ldap "gopkg.in/ldap.v3"
 )
 
 func addUserToAD(UserName string, firstname string, lastname string, dnName string, adConn *ldap.Conn, desc string) error {
 	userFullName := fmt.Sprintf("%s %s", firstname, lastname)
-	addRequest := ldap.NewAddRequest(dnName)
+	addRequest := ldap.NewAddRequest(dnName, nil)
 	addRequest.Attribute("objectClass", []string{"user"})
 	addRequest.Attribute("cn", []string{userFullName})
 	addRequest.Attribute("displayName", []string{userFullName})
@@ -37,9 +38,10 @@ func setUserPassword(dnName string, password string, adConn *ldap.Conn) error {
 
 	passwordModifyRequest := &ldap.ModifyRequest{
 		DN: dnName, // DN for the user we're resetting
-		ReplaceAttributes: []ldap.PartialAttribute{
-			{"unicodePwd", []string{pwdEncoded}},
-		},
+		Changes: []ldap.Change{{
+			Operation:    ldap.AddAttribute,
+			Modification: ldap.PartialAttribute{"unicodePwd", []string{pwdEncoded}},
+		}},
 	}
 	err = adConn.Modify(passwordModifyRequest)
 	if err != nil {
@@ -51,9 +53,10 @@ func setUserPassword(dnName string, password string, adConn *ldap.Conn) error {
 func activateUser(dnName string, adConn *ldap.Conn) error {
 	activateUserRequest := &ldap.ModifyRequest{
 		DN: dnName, // DN for the user we're resetting
-		ReplaceAttributes: []ldap.PartialAttribute{
-			{"userAccountControl", []string{"512"}},
-		},
+		Changes: []ldap.Change{{
+			Operation:    ldap.ReplaceAttribute,
+			Modification: ldap.PartialAttribute{"userAccountControl", []string{"512"}},
+		}},
 	}
 	err := adConn.Modify(activateUserRequest)
 	if err != nil {

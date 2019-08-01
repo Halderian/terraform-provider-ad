@@ -1,9 +1,9 @@
 package ad
 
-import ldap "gopkg.in/ldap.v2"
+import ldap "gopkg.in/ldap.v3"
 
 func addComputerToAD(computerName string, dnName string, adConn *ldap.Conn, desc string) error {
-	addRequest := ldap.NewAddRequest(dnName)
+	addRequest := ldap.NewAddRequest(dnName, nil)
 	addRequest.Attribute("objectClass", []string{"computer"})
 	addRequest.Attribute("sAMAccountName", []string{computerName})
 	addRequest.Attribute("userAccountControl", []string{"4096"})

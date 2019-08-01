@@ -3,7 +3,7 @@ package ad
 import (
 	"crypto/tls"
 	"fmt"
-	"gopkg.in/ldap.v2"
+	"gopkg.in/ldap.v3"
 	"log"
 )
 
@@ -33,7 +33,7 @@ func clientConnect(ip, username, password string, useSSL bool) (*ldap.Conn, erro
 	var err error
 	if useSSL {
 		adConn, err = ldap.DialTLS("tcp", fmt.Sprintf("%s:%d", ip, 636), &tls.Config{
-			InsecureSkipVerify: false,
+			InsecureSkipVerify: true,
 			ServerName:         ip,
 		})
 	} else {
