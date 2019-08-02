@@ -39,8 +39,11 @@ func setUserPassword(dnName string, password string, adConn *ldap.Conn) error {
 	passwordModifyRequest := &ldap.ModifyRequest{
 		DN: dnName, // DN for the user we're resetting
 		Changes: []ldap.Change{{
-			Operation:    ldap.AddAttribute,
-			Modification: ldap.PartialAttribute{"unicodePwd", []string{pwdEncoded}},
+			Operation: ldap.AddAttribute,
+			Modification: ldap.PartialAttribute{
+				Type: "unicodePwd",
+				Vals: []string{pwdEncoded},
+			},
 		}},
 	}
 	err = adConn.Modify(passwordModifyRequest)
@@ -54,8 +57,11 @@ func activateUser(dnName string, adConn *ldap.Conn) error {
 	activateUserRequest := &ldap.ModifyRequest{
 		DN: dnName, // DN for the user we're resetting
 		Changes: []ldap.Change{{
-			Operation:    ldap.ReplaceAttribute,
-			Modification: ldap.PartialAttribute{"userAccountControl", []string{"512"}},
+			Operation: ldap.ReplaceAttribute,
+			Modification: ldap.PartialAttribute{
+				Type: "userAccountControl",
+				Vals: []string{"512"},
+			},
 		}},
 	}
 	err := adConn.Modify(activateUserRequest)
