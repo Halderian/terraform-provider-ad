@@ -53,14 +53,15 @@ func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	orgunit := d.Get("orgunit").(string)
 	description := d.Get("description").(string)
 	dnOfGroup := "cn=" + groupName
+
 	if orgunit != "" {
-		dnOfGroup += ",ou=" + orgunit
+		dnOfGroup += "," + orgunit
 	} else {
-		dnOfGroup += ",cn=Computers"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfGroup += ",dc=" + item
+		dnOfGroup += ",cn=Users"
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfGroup += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
@@ -87,16 +88,16 @@ func resourceADGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	groupName := d.Get("name").(string)
 	domain := d.Get("domain").(string)
 	orgunit := d.Get("orgunit").(string)
-
 	dnOfGroup := "cn=" + groupName
+
 	if orgunit != "" {
-		dnOfGroup += ",ou=" + orgunit
+		dnOfGroup += "," + orgunit
 	} else {
-		dnOfGroup += ",cn=Computers"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfGroup += ",dc=" + item
+		dnOfGroup += ",cn=Users"
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfGroup += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
@@ -112,8 +113,8 @@ func resourceADGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	err := deleteGroupFromAD(dnOfGroup, client)
 	if err != nil {
-		log.Printf("[ERROR] Error while Deleting a Group from AD : %s ", err)
-		return fmt.Errorf("Error while Deleting a Group from AD %s", err)
+		log.Printf("[ERROR] Error while deleting a group from AD : %s ", err)
+		return fmt.Errorf("Error while deleting a group from AD %s", err)
 	}
 	log.Printf("[DEBUG] Group deleted from AD successfully: %s", groupName)
 	return nil
@@ -123,27 +124,27 @@ func resourceADGroupRead(d *schema.ResourceData, meta interface{}) error {
 	groupName := d.Get("name").(string)
 	domain := d.Get("domain").(string)
 	orgunit := d.Get("orgunit").(string)
+	dnOfGroup := "cn=" + groupName
 
-	var dnOfGroup string
 	if orgunit != "" {
-		dnOfGroup += "ou=" + orgunit
+		dnOfGroup += "," + orgunit
 	} else {
-		dnOfGroup += "cn=Users"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfGroup += ",dc=" + item
+		dnOfGroup += ",cn=Users"
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfGroup += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfGroup)
-	log.Printf("[DEBUG] Searching the Group from the AD : %s ", groupName)
+	log.Printf("[DEBUG] Searching the group from the AD : %s ", groupName)
 
 	client := meta.(*ldap.Conn)
 
 	searchRequest := ldap.NewSearchRequest(
 		dnOfGroup, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		"(&(objectClass=Group)(cn="+groupName+"))", // The filter to apply
+		"(&(objectClass=group)(cn="+groupName+"))", // The filter to apply
 		[]string{"dn", "cn", "description"},        // A list attributes to retrieve
 		nil,
 	)

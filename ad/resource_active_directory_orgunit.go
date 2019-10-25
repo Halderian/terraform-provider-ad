@@ -55,13 +55,12 @@ func resourceADOrgUnitCreate(d *schema.ResourceData, meta interface{}) error {
 
 	dnOfOrgUnit := "ou=" + orgUnitName
 	if parent != "" {
-		dnOfOrgUnit += ",ou=" + parent
+		dnOfOrgUnit += "," + parent
 	} else {
-		dnOfOrgUnit += ",cn=Users"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfOrgUnit += ",dc=" + item
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfOrgUnit += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfOrgUnit)
@@ -91,13 +90,12 @@ func resourceADOrgUnitDelete(d *schema.ResourceData, meta interface{}) error {
 
 	dnOfOrgUnit := "ou=" + orgUnitName
 	if parent != "" {
-		dnOfOrgUnit += ",ou=" + parent
+		dnOfOrgUnit += "," + parent
 	} else {
-		dnOfOrgUnit += ",cn=Users"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfOrgUnit += ",dc=" + item
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfOrgUnit += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfOrgUnit)
@@ -127,13 +125,12 @@ func resourceADOrgUnitRead(d *schema.ResourceData, meta interface{}) error {
 
 	dnOfOrgUnit := "ou=" + orgUnitName
 	if parent != "" {
-		dnOfOrgUnit += ",ou=" + parent
+		dnOfOrgUnit += "," + parent
 	} else {
-		dnOfOrgUnit += ",cn=Users"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfOrgUnit += ",dc=" + item
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfOrgUnit += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfOrgUnit)
