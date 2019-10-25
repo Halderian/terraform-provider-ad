@@ -43,6 +43,13 @@ func resourceGroup() *schema.Resource {
 				Default:     nil,
 				ForceNew:    true,
 			},
+			"type": {
+				Type:        schema.TypeString,
+				Description: "The type of the group. Could be either GLOBAL or LOCAL. Defaults to GLOBAL.",
+				Optional:    true,
+				Default:     "GLOBAL",
+				ForceNew:    true,
+			},
 		},
 	}
 }
@@ -52,6 +59,8 @@ func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	domain := d.Get("domain").(string)
 	orgunit := d.Get("orgunit").(string)
 	description := d.Get("description").(string)
+	typeOfGroup := d.Get("type").(string)
+
 	dnOfGroup := "cn=" + groupName
 
 	if orgunit != "" {
@@ -69,7 +78,7 @@ func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*ldap.Conn)
 
-	err := addGroupToAD(groupName, dnOfGroup, client, description)
+	err := addGroupToAD(groupName, dnOfGroup, typeOfGroup, client, description)
 	if err != nil {
 		log.Printf("[ERROR] Error while adding a group to the AD : %s", err)
 		return fmt.Errorf("Error while adding a group to the AD %s", err)
