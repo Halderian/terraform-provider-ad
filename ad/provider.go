@@ -51,6 +51,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"ad_computer": resourceComputer(),
 			"ad_group":    resourceGroup(),
+			"ad_orgunit":  resourceOrgUnit(),
 			"ad_user":     resourceUser(),
 		},
 
