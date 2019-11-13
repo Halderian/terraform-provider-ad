@@ -155,7 +155,7 @@ func resourceADGroupRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*ldap.Conn)
 
-	searchParam := "(distinguishedName=" + d.Get("dn").(string) + ")"
+	searchParam := "(distinguishedName=" + dnOfGroup + ")"
 
 	if d.Id() != "" {
 		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"

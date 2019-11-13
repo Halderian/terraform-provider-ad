@@ -143,7 +143,7 @@ func resourceADOrgUnitRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*ldap.Conn)
 
-	searchParam := "(distinguishedName=" + d.Get("dn").(string) + ")"
+	searchParam := "(distinguishedName=" + dnOfOrgUnit + ")"
 
 	if d.Id() != "" {
 		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"

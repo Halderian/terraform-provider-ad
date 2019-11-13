@@ -56,7 +56,8 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
-			"ad_users": dataActiveDirectoryUsers(),
+			"ad_group": dataActiveDirectoryGroup(),
+			"ad_ou":    dataActiveDirectoryOrgUnit(),
 		},
 
 		ConfigureFunc: providerConfigure,
