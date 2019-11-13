@@ -170,16 +170,14 @@ func resourceADUserDelete(d *schema.ResourceData, meta interface{}) error {
 func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 	domain := d.Get("domain").(string)
 	orgunit := d.Get("orgunit").(string)
-	firstname := d.Get("firstname").(string)
-	lastname := d.Get("lastname").(string)
-	name := fmt.Sprintf("%s %s", firstname, lastname)
+	username := d.Get("username").(string)
 
-	dnOfUser := "cn=" + name
+	dnOfUser := ""
 
 	if orgunit != "" {
-		dnOfUser += "," + orgunit
+		dnOfUser += orgunit
 	} else {
-		dnOfUser += ",cn=Users"
+		dnOfUser += "cn=Users"
 		domainArr := strings.Split(domain, ".")
 		for _, item := range domainArr {
 			dnOfUser += ",dc=" + item
@@ -187,11 +185,11 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfUser)
-	log.Printf("[DEBUG] Searching the user in the AD : %s", name)
+	log.Printf("[DEBUG] Searching the user in the AD : %s", username)
 
 	client := meta.(*ldap.Conn)
 
-	searchParam := "(distinguishedName=" + dnOfUser + ")"
+	searchParam := "(sAMAccountName=" + username + ")"
 
 	if d.Id() != "" {
 		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
@@ -219,8 +217,8 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 		d.SetId("")
 	} else {
 		if len(sr.Entries) > 1 {
-			log.Printf("[ERROR] Error found ambigious values for user: %s", name)
-			return fmt.Errorf("Error found ambigious values for user: %s", name)
+			log.Printf("[ERROR] Error found ambigious values for user: %s", username)
+			return fmt.Errorf("Error found ambigious values for user: %s", username)
 		}
 		user := sr.Entries[0]
 		userID, userDN := parseExtendedDN(user.DN)
