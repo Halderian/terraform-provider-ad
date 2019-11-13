@@ -7,7 +7,6 @@ import (
 func dataActiveDirectoryGroup() *schema.Resource {
 	return &schema.Resource{
 		Read: resourceADGroupRead,
-
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -22,8 +21,7 @@ func dataActiveDirectoryGroup() *schema.Resource {
 			"description": {
 				Type:        schema.TypeString,
 				Description: "The description of the group",
-				Optional:    true,
-				Default:     nil,
+				Computed:    true,
 			},
 			"orgunit": {
 				Type:        schema.TypeString,

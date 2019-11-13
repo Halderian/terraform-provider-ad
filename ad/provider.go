@@ -10,7 +10,6 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-
 			"domain": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -58,6 +57,7 @@ func Provider() terraform.ResourceProvider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"ad_group": dataActiveDirectoryGroup(),
 			"ad_ou":    dataActiveDirectoryOrgUnit(),
+			"ad_user":  dataActiveDirectoryUser(),
 		},
 
 		ConfigureFunc: providerConfigure,

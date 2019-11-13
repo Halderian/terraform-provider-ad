@@ -21,7 +21,7 @@ func resourceUser() *schema.Resource {
 				Type:        schema.TypeString,
 				Description: "The login name of the user",
 				Required:    true,
-				ForceNew:    true,
+				ForceNew:    false,
 			},
 			"password": {
 				Type:        schema.TypeString,
@@ -67,6 +67,11 @@ func resourceUser() *schema.Resource {
 				Default:     nil,
 				ForceNew:    false,
 			},
+			"dn": {
+				Type:        schema.TypeString,
+				Description: "The distinguished name of the user",
+				Computed:    true,
+			},
 		},
 	}
 }
@@ -81,15 +86,16 @@ func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 	lastname := d.Get("lastname").(string)
 	name := fmt.Sprintf("%s %s", firstname, lastname)
 
-	dnOfUser := "CN=" + name
+	dnOfUser := "cn=" + name
+
 	if orgunit != "" {
-		dnOfUser += ",ou=Users,ou=" + orgunit
+		dnOfUser += "," + orgunit
 	} else {
 		dnOfUser += ",cn=Users"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfUser += ",dc=" + item
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfUser += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfUser)
@@ -102,7 +108,7 @@ func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[ERROR] Error while adding a user to the AD : %s", err)
 		return fmt.Errorf("Error while adding a user to the AD %s", err)
 	}
-	d.SetId(dnOfUser)
+	d.Set("dn", dnOfUser)
 	err = setUserPassword(dnOfUser, password, client)
 	if err != nil {
 		log.Printf("[ERROR] Error while changing password of user : %s", err)
@@ -129,15 +135,16 @@ func resourceADUserDelete(d *schema.ResourceData, meta interface{}) error {
 	lastname := d.Get("lastname").(string)
 	name := fmt.Sprintf("%s %s", firstname, lastname)
 
-	dnOfUser := "CN=" + name
+	dnOfUser := "cn=" + name
+
 	if orgunit != "" {
-		dnOfUser += ",ou=Users,ou=" + orgunit
+		dnOfUser += "," + orgunit
 	} else {
 		dnOfUser += ",cn=Users"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfUser += ",dc=" + item
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfUser += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is: %s", dnOfUser)
@@ -167,15 +174,16 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 	lastname := d.Get("lastname").(string)
 	name := fmt.Sprintf("%s %s", firstname, lastname)
 
-	var dnOfUser string
+	dnOfUser := "cn=" + name
+
 	if orgunit != "" {
-		dnOfUser += "ou=Users,ou=" + orgunit
+		dnOfUser += "," + orgunit
 	} else {
-		dnOfUser += "cn=Users"
-	}
-	domainArr := strings.Split(domain, ".")
-	for _, item := range domainArr {
-		dnOfUser += ",dc=" + item
+		dnOfUser += ",cn=Users"
+		domainArr := strings.Split(domain, ".")
+		for _, item := range domainArr {
+			dnOfUser += ",dc=" + item
+		}
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfUser)
@@ -183,13 +191,23 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*ldap.Conn)
 
+	searchParam := "(distinguishedName=" + dnOfUser + ")"
+
+	if d.Id() != "" {
+		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
+	}
+
+	log.Printf("[DEBUG] Search Parameters for user: %s ", searchParam)
+
 	searchRequest := ldap.NewSearchRequest(
 		dnOfUser, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		"(&(objectClass=User)(cn="+name+"))",                                     // The filter to apply
+		"(&(objectClass=User)"+searchParam+")",                                   // The filter to apply
 		[]string{"dn", "cn", "description", "givenName", "sn", "sAMAccountName"}, // A list attributes to retrieve
 		nil,
 	)
+
+	searchRequest.Controls = append(searchRequest.Controls, &ldapControlServerExtendDN{})
 
 	sr, err := client.Search(searchRequest)
 	if err != nil {
@@ -205,7 +223,9 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 			return fmt.Errorf("Error found ambigious values for user: %s", name)
 		}
 		user := sr.Entries[0]
-		d.SetId(user.DN)
+		userID, userDN := parseExtendedDN(user.DN)
+		d.SetId(userID)
+		d.Set("dn", userDN)
 		d.Set("username", user.GetAttributeValue("sAMAccountName"))
 		d.Set("name", user.GetAttributeValue("cn"))
 		d.Set("firstname", user.GetAttributeValue("givenName"))

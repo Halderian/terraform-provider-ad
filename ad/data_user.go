@@ -1,80 +1,60 @@
 package ad
 
 import (
-	"log"
-
 	"github.com/hashicorp/terraform/helper/schema"
-	ldap "gopkg.in/ldap.v3"
 )
 
-func dataActiveDirectoryUsers() *schema.Resource {
+func dataActiveDirectoryUser() *schema.Resource {
 	return &schema.Resource{
-		Read: adUserReadBySearch,
-
+		Read: resourceADUserRead,
 		Schema: map[string]*schema.Schema{
-			"users": &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{
-					Type: schema.TypeMap,
-				},
-				Computed: true,
+			"username": {
+				Type:        schema.TypeString,
+				Description: "The login name of the user",
+				Required:    true,
 			},
-			"base_search_dn": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+			"password": {
+				Type:        schema.TypeString,
+				Description: "The login password of the user",
+				Computed:    true,
+				Sensitive:   true,
 			},
-			"username_filter": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "*",
+			"domain": {
+				Type:        schema.TypeString,
+				Description: "The login domain of the user",
+				Required:    true,
 			},
-			"attributes": &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-				Optional: true,
+			"firstname": {
+				Type:        schema.TypeString,
+				Description: "The first name of the user",
+				Computed:    true,
+			},
+			"lastname": {
+				Type:        schema.TypeString,
+				Description: "The last name of the user",
+				Computed:    true,
+			},
+			"name": {
+				Type:        schema.TypeString,
+				Description: "The full name of the user",
+				Computed:    true,
+			},
+			"description": {
+				Type:        schema.TypeString,
+				Description: "The description of the user",
+				Computed:    true,
+			},
+			"orgunit": {
+				Type:        schema.TypeString,
+				Description: "The organizational unit the user belongs to",
+				Optional:    true,
+				Default:     nil,
+			},
+			"dn": {
+				Type:        schema.TypeString,
+				Description: "The distinguished name of the user",
+				Computed:    true,
 			},
 		},
 	}
-}
-
-func adUserReadBySearch(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ldap.Conn)
-
-	baseSearchDn := d.Get("base_search_dn").(string)
-	usernameFilter := d.Get("username_filter").(string)
-
-	var attributes []string
-	if v, ok := d.GetOk("attributes"); ok {
-		attributes = expandStringSlice(v.([]interface{}))
-	}
-
-	searchRequest := ldap.NewSearchRequest(
-		baseSearchDn, // The base dn to search
-		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		"(&(objectClass=User)(cn="+usernameFilter+"))", // The filter to apply
-		attributes, // A list attributes to retrieve
-		nil,
-	)
-
-	sr, err := client.Search(searchRequest)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	userProperties := map[string]string{}
-	users := []interface{}{}
-
-	for _, entry := range sr.Entries {
-		for _, properties := range entry.Attributes {
-			userProperties[properties.Name] = properties.Values[0]
-		}
-
-		users = append(users, userProperties)
-	}
-	d.SetId(baseSearchDn)
-	d.Set("users", users)
-
-	return nil
 }

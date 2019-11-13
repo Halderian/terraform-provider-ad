@@ -7,7 +7,6 @@ import (
 func dataActiveDirectoryOrgUnit() *schema.Resource {
 	return &schema.Resource{
 		Read: resourceADOrgUnitRead,
-
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -22,8 +21,7 @@ func dataActiveDirectoryOrgUnit() *schema.Resource {
 			"description": {
 				Type:        schema.TypeString,
 				Description: "The description of the organizational unit",
-				Optional:    true,
-				Default:     nil,
+				Computed:    true,
 			},
 			"parent": {
 				Type:        schema.TypeString,
