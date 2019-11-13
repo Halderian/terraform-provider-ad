@@ -21,7 +21,7 @@ func resourceGroup() *schema.Resource {
 				Type:        schema.TypeString,
 				Description: "The name of the group",
 				Required:    true,
-				ForceNew:    true,
+				ForceNew:    false,
 			},
 			"domain": {
 				Type:        schema.TypeString,
@@ -41,7 +41,7 @@ func resourceGroup() *schema.Resource {
 				Description: "The organizational unit the group belongs to",
 				Optional:    true,
 				Default:     nil,
-				ForceNew:    true,
+				ForceNew:    false,
 			},
 			"type": {
 				Type:        schema.TypeString,
@@ -49,6 +49,11 @@ func resourceGroup() *schema.Resource {
 				Optional:    true,
 				Default:     "GLOBAL",
 				ForceNew:    true,
+			},
+			"dn": {
+				Type:        schema.TypeString,
+				Description: "The distinguished name of the group",
+				Computed:    true,
 			},
 		},
 	}
@@ -84,7 +89,7 @@ func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("Error while adding a group to the AD %s", err)
 	}
 	log.Printf("[DEBUG] Group added to AD successfully: %s", groupName)
-	d.SetId(dnOfGroup)
+	d.Set("dn", dnOfGroup)
 	return resourceADGroupRead(d, meta)
 }
 
@@ -150,13 +155,23 @@ func resourceADGroupRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*ldap.Conn)
 
+	searchParam := "(distinguishedName=" + d.Get("dn").(string) + ")"
+
+	if d.Id() != "" {
+		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
+	}
+
+	log.Printf("[DEBUG] Search Parameters for group: %s ", searchParam)
+
 	searchRequest := ldap.NewSearchRequest(
 		dnOfGroup, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		"(&(objectClass=group)(cn="+groupName+"))", // The filter to apply
-		[]string{"dn", "cn", "description"},        // A list attributes to retrieve
+		"(&(objectClass=group)"+searchParam+")", // The filter to apply
+		[]string{"dn", "cn", "description"},     // A list attributes to retrieve
 		nil,
 	)
+
+	searchRequest.Controls = append(searchRequest.Controls, &ldapControlServerExtendDN{})
 
 	sr, err := client.Search(searchRequest)
 	if err != nil {
@@ -172,7 +187,9 @@ func resourceADGroupRead(d *schema.ResourceData, meta interface{}) error {
 			return fmt.Errorf("Error found ambigious values for group: %s", groupName)
 		}
 		group := sr.Entries[0]
-		d.SetId(group.DN)
+		groupID, groupDN := parseExtendedDN(group.DN)
+		d.SetId(groupID)
+		d.Set("dn", groupDN)
 		d.Set("name", group.GetAttributeValue("cn"))
 		d.Set("description", group.GetAttributeValue("description"))
 	}

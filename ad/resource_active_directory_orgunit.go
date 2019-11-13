@@ -21,7 +21,7 @@ func resourceOrgUnit() *schema.Resource {
 				Type:        schema.TypeString,
 				Description: "The name of the organizational unit",
 				Required:    true,
-				ForceNew:    true,
+				ForceNew:    false,
 			},
 			"domain": {
 				Type:        schema.TypeString,
@@ -41,7 +41,12 @@ func resourceOrgUnit() *schema.Resource {
 				Description: "The parent of the organizational unit. Empty if this organizational unit is top level.",
 				Optional:    true,
 				Default:     nil,
-				ForceNew:    true,
+				ForceNew:    false,
+			},
+			"dn": {
+				Type:        schema.TypeString,
+				Description: "The distinguished name of the organization unit",
+				Computed:    true,
 			},
 		},
 	}
@@ -74,7 +79,7 @@ func resourceADOrgUnitCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("Error while adding a organizational unit to the AD %s", err)
 	}
 	log.Printf("[DEBUG] Organizational Unit added to AD successfully: %s", orgUnitName)
-	d.SetId(dnOfOrgUnit)
+	d.Set("dn", dnOfOrgUnit)
 	return resourceADOrgUnitRead(d, meta)
 }
 
@@ -138,13 +143,23 @@ func resourceADOrgUnitRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*ldap.Conn)
 
+	searchParam := "(distinguishedName=" + d.Get("dn").(string) + ")"
+
+	if d.Id() != "" {
+		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
+	}
+
+	log.Printf("[DEBUG] Search Parameters for organizational unit: %s ", searchParam)
+
 	searchRequest := ldap.NewSearchRequest(
 		dnOfOrgUnit, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		"(&(objectClass=organizationalunit)(ou="+orgUnitName+"))", // The filter to apply
-		[]string{"dn", "ou", "description"},                       // A list attributes to retrieve
+		"(&(objectClass=organizationalunit)"+searchParam+")", // The filter to apply
+		[]string{"dn", "ou", "description"},                  // A list attributes to retrieve
 		nil,
 	)
+
+	searchRequest.Controls = append(searchRequest.Controls, &ldapControlServerExtendDN{})
 
 	sr, err := client.Search(searchRequest)
 	if err != nil {
@@ -160,7 +175,9 @@ func resourceADOrgUnitRead(d *schema.ResourceData, meta interface{}) error {
 			return fmt.Errorf("Error found ambigious values for organizational unit: %s", orgUnitName)
 		}
 		orgUnit := sr.Entries[0]
-		d.SetId(orgUnit.DN)
+		orgID, orgDN := parseExtendedDN(orgUnit.DN)
+		d.SetId(orgID)
+		d.Set("dn", orgDN)
 		d.Set("name", orgUnit.GetAttributeValue("ou"))
 		d.Set("description", orgUnit.GetAttributeValue("description"))
 	}
