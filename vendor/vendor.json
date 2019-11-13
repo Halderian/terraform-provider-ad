@@ -3,16 +3,22 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "xsaHqy6/sonLV6xIxTNh4FfkWbU=",
-			"path": "gopkg.in/asn1-ber.v1",
-			"revision": "379148ca0225df7a432012b8df0355c2a2063ac0",
-			"revisionTime": "2017-05-11T16:59:59Z"
+			"checksumSHA1": "cn9QnxhUJBGuh1Nu/FKzZDmdXIA=",
+			"path": "github.com/go-asn1-ber/asn1-ber",
+			"revision": "158c9f99fc9c29a5ca9203be28f0fdf31cfb9701",
+			"revisionTime": "2019-11-05T00:34:16Z"
 		},
 		{
-			"checksumSHA1": "OFOJ8wTA3V2MIgGyH23F/DU6J/k=",
+			"checksumSHA1": "uAWWuqlO0961RtFHVat2LmUmj2M=",
+			"path": "gopkg.in/asn1-ber.v1",
+			"revision": "158c9f99fc9c29a5ca9203be28f0fdf31cfb9701",
+			"revisionTime": "2019-11-05T00:34:16Z"
+		},
+		{
+			"checksumSHA1": "vKQiq7vUkGDNBJjHcqDoZqfaHCk=",
 			"path": "gopkg.in/ldap.v3",
-			"revision": "9f0d712775a0973b7824a1585a86a4ea1d5263d9",
-			"revisionTime": "2019-04-17T17:18:12Z"
+			"revision": "3c7ebc5837612e50ae3a60b8e9933837c9193f5f",
+			"revisionTime": "2019-11-07T01:18:53Z"
 		}
 	],
 	"rootPath": "github.com/appelgriebsch/terraform-provider-ad"
