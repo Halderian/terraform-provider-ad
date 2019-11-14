@@ -1,6 +1,7 @@
 package ad
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -26,7 +27,8 @@ func resourceOrgUnit() *schema.Resource {
 			"domain": {
 				Type:        schema.TypeString,
 				Description: "The domain of the organizational unit",
-				Required:    true,
+				Optional:    true,
+				Default:     nil,
 				ForceNew:    true,
 			},
 			"description": {
@@ -61,11 +63,13 @@ func resourceADOrgUnitCreate(d *schema.ResourceData, meta interface{}) error {
 	dnOfOrgUnit := "ou=" + orgUnitName
 	if parent != "" {
 		dnOfOrgUnit += "," + parent
-	} else {
+	} else if domain != "" {
 		domainArr := strings.Split(domain, ".")
 		for _, item := range domainArr {
 			dnOfOrgUnit += ",dc=" + item
 		}
+	} else {
+		return errors.New("Either parent or domain has to be set")
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfOrgUnit)

@@ -1,6 +1,7 @@
 package ad
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -26,7 +27,8 @@ func resourceGroup() *schema.Resource {
 			"domain": {
 				Type:        schema.TypeString,
 				Description: "The domain of the group",
-				Required:    true,
+				Optional:    true,
+				Default:     nil,
 				ForceNew:    true,
 			},
 			"description": {
@@ -70,12 +72,14 @@ func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if orgunit != "" {
 		dnOfGroup += "," + orgunit
-	} else {
+	} else if domain != "" {
 		dnOfGroup += ",cn=Users"
 		domainArr := strings.Split(domain, ".")
 		for _, item := range domainArr {
 			dnOfGroup += ",dc=" + item
 		}
+	} else {
+		return errors.New("Either domain or organizational unit have to be set.")
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)

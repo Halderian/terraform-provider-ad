@@ -16,7 +16,8 @@ func dataActiveDirectoryOrgUnit() *schema.Resource {
 			"domain": {
 				Type:        schema.TypeString,
 				Description: "The domain of the organizational unit",
-				Required:    true,
+				Optional:    true,
+				Default:     nil,
 			},
 			"description": {
 				Type:        schema.TypeString,
@@ -32,7 +33,8 @@ func dataActiveDirectoryOrgUnit() *schema.Resource {
 			"dn": {
 				Type:        schema.TypeString,
 				Description: "The distinguished name of the organization unit",
-				Computed:    true,
+				Optional:    true,
+				Default:     nil,
 			},
 		},
 	}

@@ -16,7 +16,8 @@ func dataActiveDirectoryGroup() *schema.Resource {
 			"domain": {
 				Type:        schema.TypeString,
 				Description: "The domain of the group",
-				Required:    true,
+				Optional:    true,
+				Default:     nil,
 			},
 			"description": {
 				Type:        schema.TypeString,
@@ -38,7 +39,8 @@ func dataActiveDirectoryGroup() *schema.Resource {
 			"dn": {
 				Type:        schema.TypeString,
 				Description: "The distinguished name of the group",
-				Computed:    true,
+				Optional:    true,
+				Default:     nil,
 			},
 		},
 	}
