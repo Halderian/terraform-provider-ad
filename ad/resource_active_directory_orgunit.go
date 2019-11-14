@@ -124,18 +124,25 @@ func resourceADOrgUnitDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceADOrgUnitRead(d *schema.ResourceData, meta interface{}) error {
-	orgUnitName := d.Get("name").(string)
-	domain := d.Get("domain").(string)
-	parent := d.Get("parent").(string)
+	var orgUnitName string
+	dnOfOrgUnit := d.Get("dn").(string)
 
-	dnOfOrgUnit := "ou=" + orgUnitName
-	if parent != "" {
-		dnOfOrgUnit += "," + parent
-	} else {
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfOrgUnit += ",dc=" + item
+	if dnOfOrgUnit == "" {
+		orgUnitName = d.Get("name").(string)
+		domain := d.Get("domain").(string)
+		parent := d.Get("parent").(string)
+
+		dnOfOrgUnit = "ou=" + orgUnitName
+		if parent != "" {
+			dnOfOrgUnit += "," + parent
+		} else {
+			domainArr := strings.Split(domain, ".")
+			for _, item := range domainArr {
+				dnOfOrgUnit += ",dc=" + item
+			}
 		}
+	} else {
+		orgUnitName = parseDN(dnOfOrgUnit, "ou")
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfOrgUnit)

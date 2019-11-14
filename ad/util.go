@@ -1,6 +1,7 @@
 package ad
 
 import (
+	"fmt"
 	"log"
 	"regexp"
 )
@@ -38,4 +39,17 @@ func generateObjectIdQueryString(oID string) string {
 	result = result[:len(result)-1]
 	log.Printf("[DEBUG] Result objectID %s ", result)
 	return result
+}
+
+func parseDN(dn string, identifier string) string {
+	log.Printf("[DEBUG] Given DN string: %s ", dn)
+	regex1 := regexp.MustCompile(fmt.Sprintf(`^(?i)%s=(?P<NAME>\w*),(?P<PARENT>.*)$`, identifier))
+
+	if regex1.MatchString(dn) {
+		res := regex1.FindStringSubmatch(dn)
+		log.Printf("[DEBUG] Result of regex: %s ", res)
+		return res[1]
+	}
+
+	return dn
 }

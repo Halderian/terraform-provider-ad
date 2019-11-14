@@ -135,19 +135,26 @@ func resourceADGroupDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceADGroupRead(d *schema.ResourceData, meta interface{}) error {
-	groupName := d.Get("name").(string)
-	domain := d.Get("domain").(string)
-	orgunit := d.Get("orgunit").(string)
-	dnOfGroup := "cn=" + groupName
+	var groupName string
+	dnOfGroup := d.Get("dn").(string)
 
-	if orgunit != "" {
-		dnOfGroup += "," + orgunit
-	} else {
-		dnOfGroup += ",cn=Users"
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfGroup += ",dc=" + item
+	if dnOfGroup == "" {
+		groupName = d.Get("name").(string)
+		domain := d.Get("domain").(string)
+		orgunit := d.Get("orgunit").(string)
+		dnOfGroup = "cn=" + groupName
+
+		if orgunit != "" {
+			dnOfGroup += "," + orgunit
+		} else {
+			dnOfGroup += ",cn=Users"
+			domainArr := strings.Split(domain, ".")
+			for _, item := range domainArr {
+				dnOfGroup += ",dc=" + item
+			}
 		}
+	} else {
+		groupName = parseDN(dnOfGroup, "cn")
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfGroup)

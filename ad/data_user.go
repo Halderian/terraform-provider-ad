@@ -13,12 +13,6 @@ func dataActiveDirectoryUser() *schema.Resource {
 				Description: "The login name of the user",
 				Required:    true,
 			},
-			"password": {
-				Type:        schema.TypeString,
-				Description: "The login password of the user",
-				Computed:    true,
-				Sensitive:   true,
-			},
 			"domain": {
 				Type:        schema.TypeString,
 				Description: "The login domain of the user",
