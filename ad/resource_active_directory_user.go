@@ -72,6 +72,15 @@ func resourceUser() *schema.Resource {
 				Description: "The distinguished name of the user",
 				Computed:    true,
 			},
+			"groups": {
+				Type: schema.TypeSet,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional: true,
+				Default:  nil,
+				ForceNew: false,
+			},
 		},
 	}
 }
@@ -205,8 +214,8 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 	searchRequest := ldap.NewSearchRequest(
 		dnOfUser, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		"(&(objectClass=User)"+searchParam+")",                                   // The filter to apply
-		[]string{"dn", "cn", "description", "givenName", "sn", "sAMAccountName"}, // A list attributes to retrieve
+		"(&(objectClass=User)"+searchParam+")",                                               // The filter to apply
+		[]string{"dn", "cn", "description", "givenName", "sn", "sAMAccountName", "memberOf"}, // A list attributes to retrieve
 		nil,
 	)
 
@@ -227,6 +236,13 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		user := sr.Entries[0]
 		userID, userDN := parseExtendedDN(user.DN)
+		var userGroups []string
+
+		for _, group := range user.GetAttributeValues("memberOf") {
+			_, dn := parseExtendedDN(group)
+			userGroups = append(userGroups, dn)
+		}
+
 		d.SetId(userID)
 		d.Set("dn", userDN)
 		d.Set("username", user.GetAttributeValue("sAMAccountName"))
@@ -234,6 +250,7 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("firstname", user.GetAttributeValue("givenName"))
 		d.Set("lastname", user.GetAttributeValue("sn"))
 		d.Set("description", user.GetAttributeValue("description"))
+		d.Set("groups", userGroups)
 	}
 	return nil
 }

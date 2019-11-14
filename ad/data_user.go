@@ -49,6 +49,13 @@ func dataActiveDirectoryUser() *schema.Resource {
 				Description: "The distinguished name of the user",
 				Computed:    true,
 			},
+			"groups": {
+				Type: schema.TypeSet,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Computed: true,
+			},
 		},
 	}
 }
