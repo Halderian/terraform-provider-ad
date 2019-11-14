@@ -36,6 +36,13 @@ func dataActiveDirectoryGroup() *schema.Resource {
 				Optional:    true,
 				Default:     nil,
 			},
+			"members": {
+				Type: schema.TypeSet,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Computed: true,
+			},
 		},
 	}
 }

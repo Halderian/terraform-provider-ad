@@ -42,6 +42,14 @@ func resourceGroup() *schema.Resource {
 				Default:     "GLOBAL",
 				ForceNew:    true,
 			},
+			"members": {
+				Type: schema.TypeSet,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional: true,
+				ForceNew: false,
+			},
 			"dn": {
 				Type:        schema.TypeString,
 				Description: "The distinguished name of the group",
@@ -76,6 +84,16 @@ func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceADGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	//TODO
+	if d.HasChange("members") {
+		old, new := d.GetChange("members")
+		for k, v := range new.(map[string]string) {
+			if _, exists := old.(map[string]string)[k]; exists {
+				log.Printf("[DEBUG] found existing member %s. Skip update", v)
+			} else {
+				log.Printf("[DEBUG] found new member %s. Do update", v)
+			}
+		}
+	}
 	return resourceADGroupRead(d, meta)
 }
 
