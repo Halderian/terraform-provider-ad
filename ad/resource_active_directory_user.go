@@ -168,28 +168,33 @@ func resourceADUserDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
-	domain := d.Get("domain").(string)
-	orgunit := d.Get("orgunit").(string)
-	username := d.Get("username").(string)
+	var username string
+	var searchParam string
+	dnOfUser := d.Get("dn").(string)
 
-	dnOfUser := ""
+	if dnOfUser == "" {
+		domain := d.Get("domain").(string)
+		orgunit := d.Get("orgunit").(string)
+		username = d.Get("username").(string)
 
-	if orgunit != "" {
-		dnOfUser += orgunit
-	} else {
-		dnOfUser += "cn=Users"
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfUser += ",dc=" + item
+		if orgunit != "" {
+			dnOfUser += orgunit
+		} else {
+			dnOfUser += "cn=Users"
+			domainArr := strings.Split(domain, ".")
+			for _, item := range domainArr {
+				dnOfUser += ",dc=" + item
+			}
 		}
+		searchParam = "(sAMAccountName=" + username + ")"
+	} else {
+		searchParam = "(distinguishedName=" + dnOfUser + ")"
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfUser)
 	log.Printf("[DEBUG] Searching the user in the AD : %s", username)
 
 	client := meta.(*ldap.Conn)
-
-	searchParam := "(sAMAccountName=" + username + ")"
 
 	if d.Id() != "" {
 		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
