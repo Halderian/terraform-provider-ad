@@ -1,10 +1,8 @@
 package ad
 
 import (
-	"errors"
 	"fmt"
 	"log"
-	"strings"
 
 	ldap "gopkg.in/ldap.v3"
 
@@ -24,13 +22,6 @@ func resourceGroup() *schema.Resource {
 				Required:    true,
 				ForceNew:    false,
 			},
-			"domain": {
-				Type:        schema.TypeString,
-				Description: "The domain of the group",
-				Optional:    true,
-				Default:     nil,
-				ForceNew:    true,
-			},
 			"description": {
 				Type:        schema.TypeString,
 				Description: "The description of the group",
@@ -38,11 +29,10 @@ func resourceGroup() *schema.Resource {
 				Default:     nil,
 				ForceNew:    false,
 			},
-			"orgunit": {
+			"parent": {
 				Type:        schema.TypeString,
-				Description: "The organizational unit the group belongs to",
-				Optional:    true,
-				Default:     nil,
+				Description: "The parent the group belongs to. Could be either the DN of an OU or a DC.",
+				Required:    true,
 				ForceNew:    false,
 			},
 			"type": {
@@ -63,24 +53,11 @@ func resourceGroup() *schema.Resource {
 
 func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	groupName := d.Get("name").(string)
-	domain := d.Get("domain").(string)
-	orgunit := d.Get("orgunit").(string)
+	parent := d.Get("parent").(string)
 	description := d.Get("description").(string)
 	typeOfGroup := d.Get("type").(string)
 
-	dnOfGroup := "cn=" + groupName
-
-	if orgunit != "" {
-		dnOfGroup += "," + orgunit
-	} else if domain != "" {
-		dnOfGroup += ",cn=Users"
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfGroup += ",dc=" + item
-		}
-	} else {
-		return errors.New("Either domain or organizational unit have to be set.")
-	}
+	dnOfGroup := fmt.Sprintf("cn=%s,%s", groupName, parent)
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
 	log.Printf("[DEBUG] Adding the group to the AD: %s ", groupName)
@@ -104,19 +81,9 @@ func resourceADGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceADGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	groupName := d.Get("name").(string)
-	domain := d.Get("domain").(string)
-	orgunit := d.Get("orgunit").(string)
-	dnOfGroup := "cn=" + groupName
+	parent := d.Get("parent").(string)
 
-	if orgunit != "" {
-		dnOfGroup += "," + orgunit
-	} else {
-		dnOfGroup += ",cn=Users"
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfGroup += ",dc=" + item
-		}
-	}
+	dnOfGroup := fmt.Sprintf("cn=%s,%s", groupName, parent)
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
 	log.Printf("[DEBUG] Deleting the group from the AD : %s", groupName)
@@ -140,25 +107,17 @@ func resourceADGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 func resourceADGroupRead(d *schema.ResourceData, meta interface{}) error {
 	var groupName string
+	var parent string
+
 	dnOfGroup := d.Get("dn").(string)
 
 	if dnOfGroup == "" {
 		groupName = d.Get("name").(string)
-		domain := d.Get("domain").(string)
-		orgunit := d.Get("orgunit").(string)
-		dnOfGroup = "cn=" + groupName
+		parent = d.Get("parent").(string)
 
-		if orgunit != "" {
-			dnOfGroup += "," + orgunit
-		} else {
-			dnOfGroup += ",cn=Users"
-			domainArr := strings.Split(domain, ".")
-			for _, item := range domainArr {
-				dnOfGroup += ",dc=" + item
-			}
-		}
+		dnOfGroup = fmt.Sprintf("cn=%s,%s", groupName, parent)
 	} else {
-		groupName = parseDN(dnOfGroup, "cn")
+		groupName, parent = parseDN(dnOfGroup, "cn")
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfGroup)
@@ -199,10 +158,12 @@ func resourceADGroupRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		group := sr.Entries[0]
 		groupID, groupDN := parseExtendedDN(group.DN)
+		groupName, parent = parseDN(groupDN, "cn")
 		d.SetId(groupID)
 		d.Set("dn", groupDN)
-		d.Set("name", group.GetAttributeValue("cn"))
+		d.Set("name", groupName)
 		d.Set("description", group.GetAttributeValue("description"))
+		d.Set("parent", parent)
 	}
 	return nil
 }

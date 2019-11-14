@@ -13,12 +13,6 @@ func dataActiveDirectoryOrgUnit() *schema.Resource {
 				Description: "The name of the organizational unit",
 				Required:    true,
 			},
-			"domain": {
-				Type:        schema.TypeString,
-				Description: "The domain of the organizational unit",
-				Optional:    true,
-				Default:     nil,
-			},
 			"description": {
 				Type:        schema.TypeString,
 				Description: "The description of the organizational unit",
@@ -26,7 +20,7 @@ func dataActiveDirectoryOrgUnit() *schema.Resource {
 			},
 			"parent": {
 				Type:        schema.TypeString,
-				Description: "The parent of the organizational unit. Empty if this organizational unit is top level.",
+				Description: "The parent the organizational unit belongs to. Could be either the DN of an OU or a DC.",
 				Optional:    true,
 				Default:     nil,
 			},

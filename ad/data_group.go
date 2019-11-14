@@ -13,20 +13,14 @@ func dataActiveDirectoryGroup() *schema.Resource {
 				Description: "The name of the group",
 				Required:    true,
 			},
-			"domain": {
-				Type:        schema.TypeString,
-				Description: "The domain of the group",
-				Optional:    true,
-				Default:     nil,
-			},
 			"description": {
 				Type:        schema.TypeString,
 				Description: "The description of the group",
 				Computed:    true,
 			},
-			"orgunit": {
+			"parent": {
 				Type:        schema.TypeString,
-				Description: "The organizational unit the group belongs to",
+				Description: "The parent the group belongs to. Could be either the DN of an OU or a DC.",
 				Optional:    true,
 				Default:     nil,
 			},

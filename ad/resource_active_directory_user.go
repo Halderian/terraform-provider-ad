@@ -3,7 +3,6 @@ package ad
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	ldap "gopkg.in/ldap.v3"
 
@@ -30,11 +29,10 @@ func resourceUser() *schema.Resource {
 				Sensitive:   true,
 				ForceNew:    false,
 			},
-			"domain": {
+			"parent": {
 				Type:        schema.TypeString,
-				Description: "The login domain of the user",
+				Description: "The parent the domain belongs to. Could be either the DN of an OU or a DC.",
 				Required:    true,
-				ForceNew:    true,
 			},
 			"firstname": {
 				Type:        schema.TypeString,
@@ -60,13 +58,6 @@ func resourceUser() *schema.Resource {
 				Default:     nil,
 				ForceNew:    false,
 			},
-			"orgunit": {
-				Type:        schema.TypeString,
-				Description: "The organizational unit the user belongs to",
-				Optional:    true,
-				Default:     nil,
-				ForceNew:    false,
-			},
 			"dn": {
 				Type:        schema.TypeString,
 				Description: "The distinguished name of the user",
@@ -88,24 +79,13 @@ func resourceUser() *schema.Resource {
 func resourceADUserCreate(d *schema.ResourceData, meta interface{}) error {
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
-	domain := d.Get("domain").(string)
-	orgunit := d.Get("orgunit").(string)
+	parent := d.Get("parent").(string)
 	description := d.Get("description").(string)
 	firstname := d.Get("firstname").(string)
 	lastname := d.Get("lastname").(string)
 	name := fmt.Sprintf("%s %s", firstname, lastname)
 
-	dnOfUser := "cn=" + name
-
-	if orgunit != "" {
-		dnOfUser += "," + orgunit
-	} else {
-		dnOfUser += ",cn=Users"
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfUser += ",dc=" + item
-		}
-	}
+	dnOfUser := fmt.Sprintf("cn=%s,%s", name, parent)
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfUser)
 	log.Printf("[DEBUG] Adding the user to the AD : %s", name)
@@ -138,23 +118,12 @@ func resourceADUserUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceADUserDelete(d *schema.ResourceData, meta interface{}) error {
-	domain := d.Get("domain").(string)
-	orgunit := d.Get("orgunit").(string)
+	parent := d.Get("parent").(string)
 	firstname := d.Get("firstname").(string)
 	lastname := d.Get("lastname").(string)
 	name := fmt.Sprintf("%s %s", firstname, lastname)
 
-	dnOfUser := "cn=" + name
-
-	if orgunit != "" {
-		dnOfUser += "," + orgunit
-	} else {
-		dnOfUser += ",cn=Users"
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfUser += ",dc=" + item
-		}
-	}
+	dnOfUser := fmt.Sprintf("cn=%s,%s", name, parent)
 
 	log.Printf("[DEBUG] Name of the DN is: %s", dnOfUser)
 	log.Printf("[DEBUG] Deleting the user from the AD: %s", name)
@@ -179,22 +148,15 @@ func resourceADUserDelete(d *schema.ResourceData, meta interface{}) error {
 func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 	var username string
 	var searchParam string
+	var parent string
+
 	dnOfUser := d.Get("dn").(string)
 
 	if dnOfUser == "" {
-		domain := d.Get("domain").(string)
-		orgunit := d.Get("orgunit").(string)
 		username = d.Get("username").(string)
+		parent = d.Get("parent").(string)
 
-		if orgunit != "" {
-			dnOfUser += orgunit
-		} else {
-			dnOfUser += "cn=Users"
-			domainArr := strings.Split(domain, ".")
-			for _, item := range domainArr {
-				dnOfUser += ",dc=" + item
-			}
-		}
+		dnOfUser += parent
 		searchParam = "(sAMAccountName=" + username + ")"
 	} else {
 		searchParam = "(distinguishedName=" + dnOfUser + ")"
@@ -234,10 +196,12 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 			log.Printf("[ERROR] Error found ambigious values for user: %s", username)
 			return fmt.Errorf("Error found ambigious values for user: %s", username)
 		}
+		var name string
 		user := sr.Entries[0]
 		userID, userDN := parseExtendedDN(user.DN)
-		var userGroups []string
+		name, parent = parseDN(userDN, "cn")
 
+		var userGroups []string
 		for _, group := range user.GetAttributeValues("memberOf") {
 			_, dn := parseExtendedDN(group)
 			userGroups = append(userGroups, dn)
@@ -246,10 +210,11 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 		d.SetId(userID)
 		d.Set("dn", userDN)
 		d.Set("username", user.GetAttributeValue("sAMAccountName"))
-		d.Set("name", user.GetAttributeValue("cn"))
+		d.Set("name", name)
 		d.Set("firstname", user.GetAttributeValue("givenName"))
 		d.Set("lastname", user.GetAttributeValue("sn"))
 		d.Set("description", user.GetAttributeValue("description"))
+		d.Set("parent", parent)
 		d.Set("groups", userGroups)
 	}
 	return nil

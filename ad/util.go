@@ -6,6 +6,7 @@ import (
 	"regexp"
 )
 
+// parses a given distinguised name (DN) and returns the object GUID plus rest
 func parseExtendedDN(dn string) (string, string) {
 	log.Printf("[DEBUG] Given DN string: %s ", dn)
 	regex1 := regexp.MustCompile(`^<GUID=(?P<GUID>.*)>;<SID=(?P<SID>.*)>;(?P<DN>.*)$`)
@@ -19,12 +20,13 @@ func parseExtendedDN(dn string) (string, string) {
 		res := regex2.FindStringSubmatch(dn)
 		log.Printf("[DEBUG] Result of regex: %s ", res)
 		return res[1], res[2]
+	} else {
+		log.Printf("[ERROR] No regex matched input: %s ", dn)
+		return "", dn
 	}
-
-	log.Printf("[ERROR] No regex matched input: %s ", dn)
-	return dn, dn
 }
 
+// generates an GUID query string by taking the hex string of an Object ID
 func generateObjectIdQueryString(oID string) string {
 	log.Printf("[DEBUG] Given objectID %s ", oID)
 	result := "\\"
@@ -41,14 +43,35 @@ func generateObjectIdQueryString(oID string) string {
 	return result
 }
 
-func parseDN(dn string, identifier string) string {
+// extracts the name part of a DN given the resource specific identifier (ou | cn)
+func parseDN(dn string, identifier string) (string, string) {
 	log.Printf("[DEBUG] Given DN string: %s ", dn)
 	regex1 := regexp.MustCompile(fmt.Sprintf(`^(?i)%s=(?P<NAME>\w*),(?P<PARENT>.*)$`, identifier))
 
 	if regex1.MatchString(dn) {
 		res := regex1.FindStringSubmatch(dn)
 		log.Printf("[DEBUG] Result of regex: %s ", res)
-		return res[1]
+		return res[1], res[2]
+	}
+
+	return "", dn
+}
+
+// extracts the domain part of a DN
+func extractDomainFromDN(dn string) string {
+	log.Printf("[DEBUG] Given DN string: %s ", dn)
+	regex1 := regexp.MustCompile(`(?i)dc=(\w*),?`)
+
+	if regex1.MatchString(dn) {
+		res := regex1.FindAllStringSubmatch(dn, -1)
+		log.Printf("[DEBUG] Result of regex: %s ", res)
+		result := ""
+		for _, match := range res {
+			result += fmt.Sprintf("%s.", match[1])
+		}
+		result = result[:len(result)-1]
+		log.Printf("[DEBUG] Result of operation: %s ", result)
+		return result
 	}
 
 	return dn

@@ -1,10 +1,8 @@
 package ad
 
 import (
-	"errors"
 	"fmt"
 	"log"
-	"strings"
 
 	ldap "gopkg.in/ldap.v3"
 
@@ -24,13 +22,6 @@ func resourceOrgUnit() *schema.Resource {
 				Required:    true,
 				ForceNew:    false,
 			},
-			"domain": {
-				Type:        schema.TypeString,
-				Description: "The domain of the organizational unit",
-				Optional:    true,
-				Default:     nil,
-				ForceNew:    true,
-			},
 			"description": {
 				Type:        schema.TypeString,
 				Description: "The description of the organizational unit",
@@ -40,9 +31,8 @@ func resourceOrgUnit() *schema.Resource {
 			},
 			"parent": {
 				Type:        schema.TypeString,
-				Description: "The parent of the organizational unit. Empty if this organizational unit is top level.",
-				Optional:    true,
-				Default:     nil,
+				Description: "The parent the organizational unit belongs to. Could be either the DN of an OU or a DC.",
+				Required:    true,
 				ForceNew:    false,
 			},
 			"dn": {
@@ -56,21 +46,10 @@ func resourceOrgUnit() *schema.Resource {
 
 func resourceADOrgUnitCreate(d *schema.ResourceData, meta interface{}) error {
 	orgUnitName := d.Get("name").(string)
-	domain := d.Get("domain").(string)
 	parent := d.Get("parent").(string)
 	description := d.Get("description").(string)
 
-	dnOfOrgUnit := "ou=" + orgUnitName
-	if parent != "" {
-		dnOfOrgUnit += "," + parent
-	} else if domain != "" {
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfOrgUnit += ",dc=" + item
-		}
-	} else {
-		return errors.New("Either parent or domain has to be set")
-	}
+	dnOfOrgUnit := fmt.Sprintf("ou=%s,%s", orgUnitName, parent)
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfOrgUnit)
 	log.Printf("[DEBUG] Adding the organizational unit to the AD: %s ", orgUnitName)
@@ -94,18 +73,9 @@ func resourceADOrgUnitUpdate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceADOrgUnitDelete(d *schema.ResourceData, meta interface{}) error {
 	orgUnitName := d.Get("name").(string)
-	domain := d.Get("domain").(string)
 	parent := d.Get("parent").(string)
 
-	dnOfOrgUnit := "ou=" + orgUnitName
-	if parent != "" {
-		dnOfOrgUnit += "," + parent
-	} else {
-		domainArr := strings.Split(domain, ".")
-		for _, item := range domainArr {
-			dnOfOrgUnit += ",dc=" + item
-		}
-	}
+	dnOfOrgUnit := fmt.Sprintf("ou=%s,%s", orgUnitName, parent)
 
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfOrgUnit)
 	log.Printf("[DEBUG] Deleting the organizational unit from the AD : %s", orgUnitName)
@@ -129,24 +99,17 @@ func resourceADOrgUnitDelete(d *schema.ResourceData, meta interface{}) error {
 
 func resourceADOrgUnitRead(d *schema.ResourceData, meta interface{}) error {
 	var orgUnitName string
+	var parent string
+
 	dnOfOrgUnit := d.Get("dn").(string)
 
 	if dnOfOrgUnit == "" {
 		orgUnitName = d.Get("name").(string)
-		domain := d.Get("domain").(string)
-		parent := d.Get("parent").(string)
+		parent = d.Get("parent").(string)
 
-		dnOfOrgUnit = "ou=" + orgUnitName
-		if parent != "" {
-			dnOfOrgUnit += "," + parent
-		} else {
-			domainArr := strings.Split(domain, ".")
-			for _, item := range domainArr {
-				dnOfOrgUnit += ",dc=" + item
-			}
-		}
+		dnOfOrgUnit = fmt.Sprintf("ou=%s,%s", orgUnitName, parent)
 	} else {
-		orgUnitName = parseDN(dnOfOrgUnit, "ou")
+		orgUnitName, parent = parseDN(dnOfOrgUnit, "ou")
 	}
 
 	log.Printf("[DEBUG] Name of the DN is : %s ", dnOfOrgUnit)
@@ -187,10 +150,12 @@ func resourceADOrgUnitRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		orgUnit := sr.Entries[0]
 		orgID, orgDN := parseExtendedDN(orgUnit.DN)
+		orgUnitName, parent = parseDN(orgDN, "ou")
 		d.SetId(orgID)
 		d.Set("dn", orgDN)
-		d.Set("name", orgUnit.GetAttributeValue("ou"))
+		d.Set("name", orgUnitName)
 		d.Set("description", orgUnit.GetAttributeValue("description"))
+		d.Set("parent", parent)
 	}
 	return nil
 }

@@ -13,9 +13,9 @@ func dataActiveDirectoryUser() *schema.Resource {
 				Description: "The login name of the user",
 				Required:    true,
 			},
-			"domain": {
+			"parent": {
 				Type:        schema.TypeString,
-				Description: "The login domain of the user",
+				Description: "The parent the domain belongs to. Could be either the DN of an OU or a DC.",
 				Required:    true,
 			},
 			"firstname": {
@@ -37,12 +37,6 @@ func dataActiveDirectoryUser() *schema.Resource {
 				Type:        schema.TypeString,
 				Description: "The description of the user",
 				Computed:    true,
-			},
-			"orgunit": {
-				Type:        schema.TypeString,
-				Description: "The organizational unit the user belongs to",
-				Optional:    true,
-				Default:     nil,
 			},
 			"dn": {
 				Type:        schema.TypeString,
