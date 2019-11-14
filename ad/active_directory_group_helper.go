@@ -21,9 +21,29 @@ func addGroupToAD(groupName string, dnName string, typeOfGroup string, adConn *l
 	return nil
 }
 
-func deleteGroupFromAD(dnName string, adConn *ldap.Conn) error {
-	delRequest := ldap.NewDelRequest(dnName, nil)
+func deleteGroupFromAD(groupDN string, adConn *ldap.Conn) error {
+	delRequest := ldap.NewDelRequest(groupDN, nil)
 	err := adConn.Del(delRequest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func addMemberToGroup(groupDN string, userDN string, adConn *ldap.Conn) error {
+	modifyRequest := ldap.NewModifyRequest(groupDN, nil)
+	modifyRequest.Add("member", []string{userDN})
+	err := adConn.Modify(modifyRequest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func removeMemberFromGroup(groupDN string, userDN string, adConn *ldap.Conn) error {
+	modifyRequest := ldap.NewModifyRequest(groupDN, nil)
+	modifyRequest.Delete("member", []string{userDN})
+	err := adConn.Modify(modifyRequest)
 	if err != nil {
 		return err
 	}
