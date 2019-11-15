@@ -21,8 +21,8 @@ func renameADEntry(entryDN string, newName string, adConn *ldap.Conn) error {
 	return nil
 }
 
-func moveADEntry(entryDN string, newParentDN string, adConn *ldap.Conn) error {
-	moveRequest := ldap.NewModifyDNRequest(entryDN, "", false, newParentDN)
+func moveADEntry(entryDN string, entryName string, newParentDN string, adConn *ldap.Conn) error {
+	moveRequest := ldap.NewModifyDNRequest(entryDN, entryName, true, newParentDN)
 	err := adConn.ModifyDN(moveRequest)
 	if err != nil {
 		return err

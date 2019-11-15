@@ -128,7 +128,7 @@ func resourceADGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 			dnOfGroup = fmt.Sprintf("cn=%s,%s", groupName, origParent)
 			log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
 			log.Printf("[DEBUG] About to move the group to %s", parent)
-			err = moveADEntry(dnOfGroup, parent, client)
+			err = moveADEntry(dnOfGroup, fmt.Sprintf("cn=%s", groupName), parent, client)
 		}
 	}
 
