@@ -97,18 +97,49 @@ func resourceADGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	groupName := d.Get("name").(string)
 	parent := d.Get("parent").(string)
 
-	dnOfGroup := fmt.Sprintf("cn=%s,%s", groupName, parent)
-
-	log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
-	log.Printf("[DEBUG] Adding the group to the AD: %s ", groupName)
-
+	var dnOfGroup string
 	var err error
 	client := meta.(*ldap.Conn)
+
+	if d.HasChange("parent") || d.HasChange("name") {
+		origName := groupName
+		origParent := parent
+
+		if d.HasChange("parent") {
+			o, _ := d.GetChange("parent")
+			origParent = o.(string)
+		}
+
+		if d.HasChange("name") {
+			o, _ := d.GetChange("name")
+			origName = o.(string)
+		}
+
+		if err == nil && origName != groupName {
+			// first: rename group
+			dnOfGroup = fmt.Sprintf("cn=%s,%s", origName, origParent)
+			log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
+			log.Printf("[DEBUG] About to rename the group to %s", groupName)
+			err = renameADEntry(dnOfGroup, fmt.Sprintf("cn=%s", groupName), client)
+		}
+
+		if err == nil && origParent != parent {
+			// next: move group to new parent
+			dnOfGroup = fmt.Sprintf("cn=%s,%s", groupName, origParent)
+			log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
+			log.Printf("[DEBUG] About to move the group to %s", parent)
+			err = moveADEntry(dnOfGroup, parent, client)
+		}
+	}
+
+	dnOfGroup = fmt.Sprintf("cn=%s,%s", groupName, parent)
+
+	log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
 
 	if err == nil && d.HasChange("description") {
 		new := d.Get("description").(string)
 		log.Printf("[DEBUG] found new description %s. Do update", new)
-		err = updateGroupDetails(dnOfGroup, "description", new, client)
+		err = updateADEntry(dnOfGroup, "description", new, client)
 	}
 
 	if err == nil && d.HasChange("members") {
@@ -138,6 +169,7 @@ func resourceADGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("Error while modifying a group from AD %s", err)
 	}
 
+	d.Set("dn", dnOfGroup)
 	return resourceADGroupRead(d, meta)
 }
 

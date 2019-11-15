@@ -30,16 +30,6 @@ func deleteGroupFromAD(groupDN string, adConn *ldap.Conn) error {
 	return nil
 }
 
-func updateGroupDetails(groupDN string, attribute string, newValue string, adConn *ldap.Conn) error {
-	updateRequest := ldap.NewModifyRequest(groupDN, nil)
-	updateRequest.Replace(attribute, []string{newValue})
-	err := adConn.Modify(updateRequest)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func addMemberToGroup(groupDN string, memberDN string, adConn *ldap.Conn) error {
 	modifyRequest := ldap.NewModifyRequest(groupDN, nil)
 	modifyRequest.Add("member", []string{memberDN})
