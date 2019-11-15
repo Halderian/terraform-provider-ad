@@ -68,7 +68,7 @@ func extractDomainFromDN(dn string) string {
 		log.Printf("[DEBUG] Result of regex: %s ", res)
 		result := ""
 		for _, match := range res {
-			result += fmt.Sprintf("%s.", match[1])
+			result += fmt.Sprintf("dc=%s,", match[1])
 		}
 		result = result[:len(result)-1]
 		log.Printf("[DEBUG] Result of operation: %s ", result)

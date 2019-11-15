@@ -171,15 +171,17 @@ func resourceADOrgUnitRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ldap.Conn)
 
 	searchParam := "(distinguishedName=" + dnOfOrgUnit + ")"
+	_, searchBaseDN := parseDN(dnOfOrgUnit, "ou")
 
 	if d.Id() != "" {
 		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
+		searchBaseDN = extractDomainFromDN(dnOfOrgUnit)
 	}
 
 	log.Printf("[DEBUG] Search Parameters for organizational unit: %s ", searchParam)
 
 	searchRequest := ldap.NewSearchRequest(
-		dnOfOrgUnit, // The base dn to search
+		searchBaseDN, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
 		"(&(objectClass=organizationalunit)"+searchParam+")", // The filter to apply
 		[]string{"dn", "ou", "description"},                  // A list attributes to retrieve

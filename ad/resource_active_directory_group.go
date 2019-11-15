@@ -220,15 +220,17 @@ func resourceADGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ldap.Conn)
 
 	searchParam := "(distinguishedName=" + dnOfGroup + ")"
+	_, searchBaseDN := parseDN(dnOfGroup, "cn")
 
 	if d.Id() != "" {
 		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
+		searchBaseDN = extractDomainFromDN(dnOfGroup)
 	}
 
 	log.Printf("[DEBUG] Search Parameters for group: %s ", searchParam)
 
 	searchRequest := ldap.NewSearchRequest(
-		dnOfGroup, // The base dn to search
+		searchBaseDN, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
 		"(&(objectClass=group)"+searchParam+")", // The filter to apply
 		[]string{"dn", "cn", "description"},     // A list attributes to retrieve
