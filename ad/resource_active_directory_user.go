@@ -160,6 +160,8 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 		searchParam = "(distinguishedName=" + dnOfUser + ")"
 	}
 
+	_, searchBaseDN := parseDN(dnOfUser, "cn")
+
 	log.Printf("[DEBUG] Name of the DN is : %s", dnOfUser)
 	log.Printf("[DEBUG] Searching the user in the AD : %s", username)
 
@@ -167,12 +169,13 @@ func resourceADUserRead(d *schema.ResourceData, meta interface{}) error {
 
 	if d.Id() != "" {
 		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
+		searchBaseDN = extractDomainFromDN(dnOfUser)
 	}
 
 	log.Printf("[DEBUG] Search Parameters for user: %s ", searchParam)
 
 	searchRequest := ldap.NewSearchRequest(
-		dnOfUser, // The base dn to search
+		searchBaseDN, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
 		"(&(objectClass=User)"+searchParam+")",                                               // The filter to apply
 		[]string{"dn", "cn", "description", "givenName", "sn", "sAMAccountName", "memberOf"}, // A list attributes to retrieve

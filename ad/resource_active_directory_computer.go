@@ -118,15 +118,17 @@ func resourceADComputerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ldap.Conn)
 
 	searchParam := "(distinguishedName=" + dnOfComputer + ")"
+	_, searchBaseDN := parseDN(dnOfComputer, "cn")
 
 	if d.Id() != "" {
 		searchParam = "(objectGUID=" + generateObjectIdQueryString(d.Id()) + ")"
+		searchBaseDN = extractDomainFromDN(dnOfComputer)
 	}
 
 	log.Printf("[DEBUG] Search Parameters for computer: %s ", searchParam)
 
 	searchRequest := ldap.NewSearchRequest(
-		dnOfComputer, // The base dn to search
+		searchBaseDN, // The base dn to search
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
 		"(&(objectClass=Computer)"+searchParam+")", // The filter to apply
 		[]string{"dn", "cn", "description"},        // A list attributes to retrieve
