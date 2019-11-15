@@ -67,7 +67,60 @@ func resourceADOrgUnitCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceADOrgUnitUpdate(d *schema.ResourceData, meta interface{}) error {
-	//TODO
+	orgUnitName := d.Get("name").(string)
+	parent := d.Get("parent").(string)
+
+	var dnOfOrgUnit string
+	var err error
+	client := meta.(*ldap.Conn)
+
+	if d.HasChange("parent") || d.HasChange("name") {
+		origName := orgUnitName
+		origParent := parent
+
+		if d.HasChange("parent") {
+			o, _ := d.GetChange("parent")
+			origParent = o.(string)
+		}
+
+		if d.HasChange("name") {
+			o, _ := d.GetChange("name")
+			origName = o.(string)
+		}
+
+		if err == nil && origName != orgUnitName {
+			// first: rename orgunit
+			dnOfOrgUnit = fmt.Sprintf("ou=%s,%s", origName, origParent)
+			log.Printf("[DEBUG] Name of the DN is : %s", dnOfOrgUnit)
+			log.Printf("[DEBUG] About to rename the organizational unit to %s", orgUnitName)
+			err = renameADEntry(dnOfOrgUnit, fmt.Sprintf("ou=%s", orgUnitName), client)
+		}
+
+		if err == nil && origParent != parent {
+			// next: move group to new parent
+			dnOfOrgUnit = fmt.Sprintf("ou=%s,%s", orgUnitName, origParent)
+			log.Printf("[DEBUG] Name of the DN is : %s", dnOfOrgUnit)
+			log.Printf("[DEBUG] About to move the organizational unit to %s", parent)
+			err = moveADEntry(dnOfOrgUnit, fmt.Sprintf("cn=%s", orgUnitName), parent, client)
+		}
+	}
+
+	dnOfOrgUnit = fmt.Sprintf("ou=%s,%s", orgUnitName, parent)
+
+	log.Printf("[DEBUG] Name of the DN is : %s", dnOfOrgUnit)
+
+	if err == nil && d.HasChange("description") {
+		new := d.Get("description").(string)
+		log.Printf("[DEBUG] found new description %s. Do update", new)
+		err = updateADEntry(dnOfOrgUnit, "description", new, client)
+	}
+
+	if err != nil {
+		log.Printf("[ERROR] Error while modifying an organizational unit from AD : %s ", err)
+		return fmt.Errorf("Error while modifying an organizational unit from AD %s", err)
+	}
+
+	d.Set("dn", dnOfOrgUnit)
 	return resourceADOrgUnitRead(d, meta)
 }
 
