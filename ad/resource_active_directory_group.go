@@ -48,6 +48,7 @@ func resourceGroup() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Optional: true,
+				Computed: true,
 				ForceNew: false,
 			},
 			"dn": {
@@ -83,17 +84,44 @@ func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceADGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-	//TODO
+	groupName := d.Get("name").(string)
+	parent := d.Get("parent").(string)
+
+	dnOfGroup := fmt.Sprintf("cn=%s,%s", groupName, parent)
+
+	log.Printf("[DEBUG] Name of the DN is : %s", dnOfGroup)
+	log.Printf("[DEBUG] Adding the group to the AD: %s ", groupName)
+
+	var err error
+	client := meta.(*ldap.Conn)
+
 	if d.HasChange("members") {
 		old, new := d.GetChange("members")
-		for k, v := range new.(map[string]string) {
-			if _, exists := old.(map[string]string)[k]; exists {
+		oldList := old.(*schema.Set).List()
+		newList := new.(*schema.Set).List()
+		for _, v := range newList {
+			if itemExists(oldList, v) {
 				log.Printf("[DEBUG] found existing member %s. Skip update", v)
 			} else {
-				log.Printf("[DEBUG] found new member %s. Do update", v)
+				log.Printf("[DEBUG] found new member %s. Do update (add)", v)
+				err = addMemberToGroup(dnOfGroup, v.(string), client)
+			}
+		}
+		for _, v := range oldList {
+			if itemExists(newList, v) {
+				log.Printf("[DEBUG] found existing member %s. Skip update", v)
+			} else {
+				log.Printf("[DEBUG] found obsolete member %s. Do update (remove)", v)
+				err = removeMemberFromGroup(dnOfGroup, v.(string), client)
 			}
 		}
 	}
+
+	if err != nil {
+		log.Printf("[ERROR] Error while modifying a group from AD : %s ", err)
+		return fmt.Errorf("Error while modifying a group from AD %s", err)
+	}
+
 	return resourceADGroupRead(d, meta)
 }
 

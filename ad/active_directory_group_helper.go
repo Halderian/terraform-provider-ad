@@ -30,9 +30,9 @@ func deleteGroupFromAD(groupDN string, adConn *ldap.Conn) error {
 	return nil
 }
 
-func addMemberToGroup(groupDN string, userDN string, adConn *ldap.Conn) error {
+func addMemberToGroup(groupDN string, memberDN string, adConn *ldap.Conn) error {
 	modifyRequest := ldap.NewModifyRequest(groupDN, nil)
-	modifyRequest.Add("member", []string{userDN})
+	modifyRequest.Add("member", []string{memberDN})
 	err := adConn.Modify(modifyRequest)
 	if err != nil {
 		return err
@@ -40,9 +40,9 @@ func addMemberToGroup(groupDN string, userDN string, adConn *ldap.Conn) error {
 	return nil
 }
 
-func removeMemberFromGroup(groupDN string, userDN string, adConn *ldap.Conn) error {
+func removeMemberFromGroup(groupDN string, memberDN string, adConn *ldap.Conn) error {
 	modifyRequest := ldap.NewModifyRequest(groupDN, nil)
-	modifyRequest.Delete("member", []string{userDN})
+	modifyRequest.Delete("member", []string{memberDN})
 	err := adConn.Modify(modifyRequest)
 	if err != nil {
 		return err
