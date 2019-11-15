@@ -105,7 +105,13 @@ func resourceADGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	var err error
 	client := meta.(*ldap.Conn)
 
-	if d.HasChange("members") {
+	if err == nil && d.HasChange("description") {
+		new := d.Get("description").(string)
+		log.Printf("[DEBUG] found new description %s. Do update", new)
+		err = updateGroupDetails(dnOfGroup, "description", new, client)
+	}
+
+	if err == nil && d.HasChange("members") {
 		old, new := d.GetChange("members")
 		oldList := old.(*schema.Set).List()
 		newList := new.(*schema.Set).List()
