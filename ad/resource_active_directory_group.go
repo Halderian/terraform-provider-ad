@@ -80,6 +80,16 @@ func resourceADGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	log.Printf("[DEBUG] Group added to AD successfully: %s", groupName)
 	d.Set("dn", dnOfGroup)
+
+	for _, v := range d.Get("members").(*schema.Set).List() {
+		log.Printf("[DEBUG] Found new member %s", v)
+		err = addMemberToGroup(dnOfGroup, v.(string), client)
+		if err != nil {
+			log.Printf("[ERROR] Error while adding a member to the group : %s", err)
+			return fmt.Errorf("Error while adding a member to the group %s", err)
+		}
+	}
+
 	return resourceADGroupRead(d, meta)
 }
 
