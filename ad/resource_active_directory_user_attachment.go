@@ -20,7 +20,7 @@ func resourceUserAttachment() *schema.Resource {
         Type:         schema.TypeString,
         Description:  "The dn of the group to add the user to.",
         Required:     true,
-        ForceNew:     false,
+        ForceNew:     true,
       },
       "user_dn": {
         Type:         schema.TypeString,
@@ -56,7 +56,18 @@ func resourceADUserAttachmentUpdate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceADUserAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+	groupDN := d.Get("group_dn").(string)
+	userDN 	:= d.Get("user_dn").(string)
 
+	client 	:= meta.(*ldap.Conn)
+
+	err := removeMemberFromGroup(groupDN, userDN, client)
+	if err != nil {
+		log.Printf("[ERROR] Error while detaching user from group: %s", err)
+		return fmt.Errorf("Error while detaching user from group: %s", err)
+	}
+
+	d.SetId("")
 
   return resourceADUserAttachmentRead(d, meta)
 }
