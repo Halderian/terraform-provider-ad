@@ -47,7 +47,7 @@ func generateObjectIdQueryString(oID string) string {
 // extracts the name part of a DN given the resource specific identifier (ou | cn)
 func parseDN(dn string, identifier string) (string, string) {
 	log.Printf("[DEBUG] Given DN string: %s ", dn)
-	regex1 := regexp.MustCompile(fmt.Sprintf(`^(?i)%s=(?P<NAME>\w*),(?P<PARENT>.*)$`, identifier))
+	regex1 := regexp.MustCompile(fmt.Sprintf(`^(?i)%s=(?P<NAME>[\w-]*),(?P<PARENT>.*)$`, identifier))
 
 	if regex1.MatchString(dn) {
 		res := regex1.FindStringSubmatch(dn)
