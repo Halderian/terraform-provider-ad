@@ -3,6 +3,7 @@ package ad
 import (
 	"fmt"
 	"log"
+	"github.com/google/uuid"
 
 	ldap "gopkg.in/ldap.v3"
 
@@ -28,13 +29,23 @@ func resourceUserAttachment() *schema.Resource {
         Required:     true,
         ForceNew:     true,
       },
+			"name": {
+        Type:         schema.TypeString,
+        Description:  "The for the attachment.",
+        Optional:     true,
+        ForceNew:     false,
+      },
     },
   }
 }
 
 func resourceADUserAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	groupDN := d.Get("group_dn").(string)
-	userDN 	:= d.Get("user_dn").(string)
+	groupDN 	:= d.Get("group_dn").(string)
+	userDN 		:= d.Get("user_dn").(string)
+	/*
+	groupName, _ := parseDN(groupDN, "cn")
+	userName, _ := parseDN(userDN, "cn")
+	*/
 
 	client 	:= meta.(*ldap.Conn)
 
@@ -44,13 +55,15 @@ func resourceADUserAttachmentCreate(d *schema.ResourceData, meta interface{}) er
 		return fmt.Errorf("Error while attaching user to group: %s", err)
 	}
 
-	d.SetId(groupDN+userDN)
+	d.SetId(uuid.New().String())
 
-  return resourceADUserAttachmentRead(d, meta)
+	return resourceADUserAttachmentRead(d, meta)
 }
 
 func resourceADUserAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 
+	//resourceADUserAttachmentDelete(d, meta)
+	//resourceADUserAttachmentCreate(d, meta)
 
   return resourceADUserAttachmentRead(d, meta)
 }
@@ -73,7 +86,6 @@ func resourceADUserAttachmentDelete(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceADUserAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-
 
   return nil
 }
